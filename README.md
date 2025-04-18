@@ -32,7 +32,7 @@ A microservice for converting PDF files to Markdown format using the pymupdf4llm
 python main.py
 ```
 
-The server will start on http://localhost:8002 by default.
+The server will start on http://localhost:8239 by default.
 
 ### API Endpoints
 

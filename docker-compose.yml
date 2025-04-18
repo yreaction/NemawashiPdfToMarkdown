@@ -4,7 +4,7 @@ services:
   pdf-markdown-service:
     build: .
     ports:
-      - "8002:8002"
+      - "8239:8239"
     volumes:
       - ./data:/app/data
       - ./output:/app/output

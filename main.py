@@ -109,4 +109,4 @@ async def read_root():
 if __name__ == "__main__":
     import uvicorn
     logger.info(f"Iniciando servidor en el directorio: {os.getcwd()}")
-    uvicorn.run(app, host="0.0.0.0", port=8002) # Cambiado a puerto 8002 para evitar conflictos
+    uvicorn.run(app, host="0.0.0.0", port=8239) # Cambiado a puerto 8239 para evitar conflictos

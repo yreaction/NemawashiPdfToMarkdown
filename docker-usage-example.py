@@ -10,7 +10,7 @@ import os
 import sys
 
 # Service URL (when running in Docker)
-SERVICE_URL = "http://localhost:8002/extract_markdown"
+SERVICE_URL = "http://localhost:8239/extract_markdown"
 
 def convert_pdf_to_markdown(pdf_path):
     """
