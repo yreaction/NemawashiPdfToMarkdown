@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  # Tu aplicación principal
+  main-app:
+    image: your-main-app-image
+    # ... configuración de tu aplicación principal ...
+    depends_on:
+      - pdf-markdown-service
+
+  # Servicio PDF a Markdown usando la imagen de Docker Hub
+  pdf-markdown-service:
+    image: yreactionjp/pdf-markdown-service:latest
+    ports:
+      - "8239:8239"  # Asegúrate de usar el puerto 8239
+    volumes:
+      - volumen-compartido:/data:ro 
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

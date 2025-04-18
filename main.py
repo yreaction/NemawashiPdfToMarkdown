@@ -39,9 +39,16 @@ async def extract_markdown_from_pdf(request: PDFPathRequest):
     # Configuración de directorios permitidos (incluidos los volúmenes de Docker)
     allowed_base_paths = [
         os.path.abspath(os.getcwd()),  # Directorio actual para pruebas locales
-        "/app/data",                   # Volumen de Docker para archivos PDF
-        "/app/output"                  # Volumen de Docker para archivos de salida
+        "/app/data",                   # Volumen de Docker para archivos PDF (ruta antigua)
+        "/app/output",                 # Volumen de Docker para archivos de salida (ruta antigua)
+        "/data"                        # Nueva ruta para el volumen compartido
     ]
+    
+    # Añadir path adicional desde variable de entorno si está definida
+    env_allowed_path = os.environ.get("ALLOWED_BASE_PATH")
+    if env_allowed_path:
+        logger.info(f"Usando path adicional desde variable de entorno: {env_allowed_path}")
+        allowed_base_paths.append(env_allowed_path.rstrip('/'))
     
     normalized_path = os.path.abspath(file_path)
     
@@ -73,7 +80,23 @@ async def extract_markdown_from_pdf(request: PDFPathRequest):
         logger.debug(f"Longitud del texto Markdown generado: {len(md_text)} caracteres")
         
         # Si estamos en Docker, opcionalmente podemos guardar el resultado en el volumen de salida
-        if file_path.startswith("/app/data"):
+        output_dir = "/app/output"  # Directorio de salida por defecto
+        
+        # Si el archivo está en /data (nuevo volumen), guardar en el mismo directorio
+        if file_path.startswith("/data"):
+            # Crear nombre de archivo para la salida
+            output_filename = os.path.splitext(os.path.basename(file_path))[0] + ".md"
+            output_dir = os.path.dirname(file_path)
+            output_path = os.path.join(output_dir, output_filename)
+            
+            try:
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(md_text)
+                logger.info(f"Archivo Markdown guardado en: {output_path}")
+            except Exception as e:
+                logger.warning(f"No se pudo guardar el archivo de salida: {e}")
+        # Mantener compatibilidad con la ruta antigua
+        elif file_path.startswith("/app/data"):
             # Crear nombre de archivo para la salida
             output_filename = os.path.splitext(os.path.basename(file_path))[0] + ".md"
             output_path = os.path.join("/app/output", output_filename)
