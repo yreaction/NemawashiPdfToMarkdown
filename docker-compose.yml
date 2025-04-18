@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  pdf-markdown-service:
+    build: .
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

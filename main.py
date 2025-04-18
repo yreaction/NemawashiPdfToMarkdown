@@ -36,22 +36,25 @@ async def extract_markdown_from_pdf(request: PDFPathRequest):
     logger.info(f"Recibida solicitud para procesar el archivo: {file_path}")
 
     # --- ¡IMPORTANTE! Validación de Seguridad del Path ---
-    # Aquí deberías añadir validaciones para asegurarte de que el path
-    # es seguro y solo apunta a directorios permitidos (ej: dentro de /data)
-    # Esto es crucial para evitar ataques de Path Traversal.
-    # Ejemplo básico (¡MEJORAR SEGÚN TUS NECESIDADES!):
+    # Configuración de directorios permitidos (incluidos los volúmenes de Docker)
+    allowed_base_paths = [
+        os.path.abspath(os.getcwd()),  # Directorio actual para pruebas locales
+        "/app/data",                   # Volumen de Docker para archivos PDF
+        "/app/output"                  # Volumen de Docker para archivos de salida
+    ]
     
-    # Para pruebas locales, usamos el directorio actual
-    allowed_base_path = os.path.abspath(os.getcwd())
     normalized_path = os.path.abspath(file_path)
     
     logger.info(f"Path recibido: {file_path}")
     logger.info(f"Path normalizado: {normalized_path}")
-    logger.info(f"Base path permitido: {allowed_base_path}")
+    logger.info(f"Base paths permitidos: {allowed_base_paths}")
     
-    if not normalized_path.startswith(allowed_base_path):
-         logger.error(f"Acceso denegado para el path: {file_path}. No está dentro de {allowed_base_path}")
-         raise HTTPException(status_code=403, detail=f"Acceso prohibido para la ruta proporcionada.")
+    # Verificar si el path está dentro de alguno de los directorios permitidos
+    path_allowed = any(normalized_path.startswith(base_path) for base_path in allowed_base_paths)
+    
+    if not path_allowed:
+        logger.error(f"Acceso denegado para el path: {file_path}. No está dentro de los directorios permitidos.")
+        raise HTTPException(status_code=403, detail=f"Acceso prohibido para la ruta proporcionada.")
 
     # Verifica si el archivo existe
     if not os.path.exists(file_path):
@@ -65,11 +68,23 @@ async def extract_markdown_from_pdf(request: PDFPathRequest):
     try:
         logger.info(f"Iniciando conversión a Markdown para: {file_path}")
         # Usa pymupdf4llm para convertir el PDF a Markdown
-        # Asegúrate de que la función/método llamado sea el correcto según la versión de pymupdf4llm
-        # Puede ser pymupdf4llm.to_markdown(file_path) o similar
         md_text = pymupdf4llm.to_markdown(file_path)
         logger.info(f"Conversión a Markdown completada exitosamente para: {file_path}")
         logger.debug(f"Longitud del texto Markdown generado: {len(md_text)} caracteres")
+        
+        # Si estamos en Docker, opcionalmente podemos guardar el resultado en el volumen de salida
+        if file_path.startswith("/app/data"):
+            # Crear nombre de archivo para la salida
+            output_filename = os.path.splitext(os.path.basename(file_path))[0] + ".md"
+            output_path = os.path.join("/app/output", output_filename)
+            
+            try:
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(md_text)
+                logger.info(f"Archivo Markdown guardado en: {output_path}")
+            except Exception as e:
+                logger.warning(f"No se pudo guardar el archivo de salida: {e}")
+        
         logger.debug("FIN DE PROCESAMIENTO DE SOLICITUD")
         logger.debug("="*50)
 
